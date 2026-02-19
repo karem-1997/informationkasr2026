@@ -9,77 +9,27 @@
 
     <style>
         * { box-sizing: border-box; }
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* حاوية الصور الخلفية - ملء الشاشة تماماً */
-        #bg-slider {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 1; 
-        }
-        #bg-slider img {
-            width: 100%; height: 100%; object-fit: cover;
-            position: absolute; top: 0; left: 0;
-            opacity: 0; transition: opacity 1.5s ease-in-out;
-        }
+        #bg-slider { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        #bg-slider img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 1.5s; }
         #bg-slider img.active { opacity: 1; }
 
-        /* المحتوى والواجهة */
-        .main-overlay {
-            position: relative; z-index: 5;
-            height: 100vh; width: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0, 0, 0, 0.45); /* تعتيم لإبراز النص */
-            color: white; text-align: center;
-            padding: 20px;
-        }
+        .main-overlay { position: relative; z-index: 5; height: 100vh; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); color: white; text-align: center; padding: 20px; }
+        #display-title { font-size: clamp(1.5rem, 5vw, 3.5rem); margin-bottom: 30px; text-shadow: 0 4px 15px #000; }
+        #display-button { padding: 18px 60px; background: #00d2ff; color: #000; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.4rem; }
 
-        #display-title { 
-            font-size: clamp(1.5rem, 5vw, 3.5rem); 
-            margin-bottom: 30px; 
-            line-height: 1.3;
-            text-shadow: 0 4px 15px rgba(0,0,0,0.9);
-            font-weight: bold;
-        }
+        .secret-trigger { position: fixed; top: 0; left: 0; width: 70px; height: 70px; z-index: 9999; background: transparent; border: none; }
 
-        #display-button { 
-            padding: 18px 60px; 
-            background: #00d2ff; 
-            color: #000; 
-            text-decoration: none; 
-            border-radius: 50px; 
-            font-weight: bold; 
-            font-size: 1.4rem;
-            box-shadow: 0 5px 20px rgba(0,210,255,0.4);
-            transition: 0.3s transform;
-        }
-        #display-button:active { transform: scale(0.95); }
-
-        /* العلامة السرية المخفية (أعلى اليسار) */
-        .secret-trigger {
-            position: fixed; top: 0; left: 0; width: 70px; height: 70px;
-            z-index: 9999; background: transparent; border: none; outline: none; cursor: pointer;
-        }
-
-        /* لوحة التحكم */
-        #admin-panel {
-            position: fixed; top: 0; right: 0; width: 320px; height: 100%;
-            background: #111; color: white; z-index: 10000; padding: 25px;
-            transform: translateX(100%); transition: 0.5s; overflow-y: auto;
-            border-left: 3px solid #00d2ff; text-align: right;
-        }
+        #admin-panel { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: #111; color: white; z-index: 10000; padding: 25px; transform: translateX(100%); transition: 0.5s; overflow-y: auto; border-left: 3px solid #00d2ff; }
         #admin-panel.open { transform: translateX(0); }
         
         input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; }
-        .save-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        
-        .img-list-item { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #1a1a1a; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px solid #333;
-        }
-        .img-list-item img { width: 60px; height: 45px; object-fit: cover; border-radius: 4px; }
+        .save-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #status-msg { color: #27ae60; font-size: 14px; margin-bottom: 10px; display: none; text-align: center; }
+
+        .img-list-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .img-list-item img { width: 60px; height: 45px; object-fit: cover; }
         .del-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
@@ -89,26 +39,26 @@
 
     <div id="admin-panel">
         <h2 style="color: #00d2ff; margin-top: 0;">⚙️ إعدادات الموقع</h2>
-        <input type="text" id="in-title" placeholder="تعديل اسم المستشفى/العنوان">
-        <input type="text" id="in-btn-txt" placeholder="نص الزر (مثلاً: ابدأ الاستعلام)">
-        <input type="text" id="in-btn-url" placeholder="رابط الصفحة المستهدفة">
-        
-        <label style="font-size: 13px; color: #888;">إضافة صورة للخلفية:</label>
+        <div id="status-msg">تم الحفظ بنجاح ✅</div>
+        <input type="text" id="in-title" placeholder="تعديل العنوان">
+        <input type="text" id="in-btn-txt" placeholder="نص الزر">
+        <input type="text" id="in-btn-url" placeholder="رابط الزر">
+        <label style="font-size: 13px; color: #888;">إضافة صورة:</label>
         <input type="file" id="in-file" accept="image/*">
         
-        <button class="save-btn" onclick="uploadConfig()">حفظ وتحديث الموقع</button>
+        <button class="save-btn" onclick="uploadConfig()">حفظ التعديلات</button>
         
         <hr style="border: 0.5px solid #333; margin: 25px 0;">
-        <h4 style="margin: 0 0 10px 0;">الصور المعروضة حالياً:</h4>
+        <h4 style="margin-bottom:10px;">الصور الحالية:</h4>
         <div id="manager-list"></div>
         
-        <button onclick="document.getElementById('admin-panel').classList.remove('open')" style="margin-top:30px; background:none; border:none; color:#555; width:100%; cursor:pointer;">إغلاق اللوحة</button>
+        <button onclick="document.getElementById('admin-panel').classList.remove('open')" style="margin-top:30px; background:none; border:none; color:gray; width:100%; cursor:pointer;">إغلاق اللوحة ✖</button>
     </div>
 
     <div id="bg-slider"></div>
 
     <div class="main-overlay">
-        <h1 id="display-title">استعلامات مستشفى القصر العيني الفرنساوي</h1>
+        <h1 id="display-title">تحميل...</h1>
         <a href="#" id="display-button">دخول</a>
     </div>
 
@@ -125,12 +75,14 @@
         const db = firebase.database();
 
         function checkAuth() {
-            const p = prompt("برجاء إدخال الرمز السري للمشرف:");
-            if (p === "1987") {
-                document.getElementById('admin-panel').classList.add('open');
-            } else if(p !== null) {
-                alert("رمز غير صحيح!");
-            }
+            const p = prompt("الرمز السري:");
+            if (p === "1987") document.getElementById('admin-panel').classList.add('open');
+        }
+
+        function showMsg() {
+            const msg = document.getElementById('status-msg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
         }
 
         function uploadConfig() {
@@ -143,27 +95,25 @@
             if(title) upd['title'] = title;
             if(bTxt) upd['btnText'] = bTxt;
             if(bUrl) upd['btnLink'] = bUrl;
-            db.ref('siteConfig').update(upd);
+            
+            db.ref('siteConfig').update(upd).then(() => { if(!file) showMsg(); });
 
             if(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    db.ref('imagesList').push(e.target.result).then(() => location.reload());
+                    db.ref('imagesList').push(e.target.result).then(() => {
+                        document.getElementById('in-file').value = ""; // تفريغ خانة الملف
+                        showMsg();
+                    });
                 };
                 reader.readAsDataURL(file);
-            } else {
-                alert("تم تحديث النصوص بنجاح!");
-                location.reload();
             }
         }
 
         function removeImage(key) {
-            if(confirm("هل أنت متأكد من حذف هذه الصورة؟")) {
-                db.ref('imagesList').child(key).remove();
-            }
+            if(confirm("حذف الصورة؟")) db.ref('imagesList').child(key).remove();
         }
 
-        // مزامنة النصوص
         db.ref('siteConfig').on('value', s => {
             const d = s.val();
             if(d) {
@@ -173,24 +123,18 @@
             }
         });
 
-        // مزامنة الصور (الخلفية + قائمة الحذف)
         db.ref('imagesList').on('value', s => {
             const imgs = s.val();
             const slider = document.getElementById('bg-slider');
             const manager = document.getElementById('manager-list');
-            slider.innerHTML = ""; 
-            manager.innerHTML = "";
-            
+            slider.innerHTML = ""; manager.innerHTML = "";
             if(imgs) {
                 Object.keys(imgs).forEach((key, i) => {
                     const url = imgs[key];
-                    // إضافة للخلفية
                     const imgTag = document.createElement('img');
                     imgTag.src = url;
                     if(i === 0) imgTag.className = "active";
                     slider.appendChild(imgTag);
-                    
-                    // إضافة للوحة التحكم
                     const item = document.createElement('div');
                     item.className = "img-list-item";
                     item.innerHTML = `<img src="${url}"> <button class="del-btn" onclick="removeImage('${key}')">حذف</button>`;
@@ -199,7 +143,6 @@
             }
         });
 
-        // تحريك الصور كل 3 ثواني
         let currentIdx = 0;
         setInterval(() => {
             const allSlides = document.querySelectorAll('#bg-slider img');
@@ -211,4 +154,3 @@
     </script>
 </body>
 </html>
-
