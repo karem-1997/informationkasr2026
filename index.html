@@ -4,53 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>استعلامات مستشفى القصر العيني الفرنساوي</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
 
-        /* تحسين السلايدر ليكون جاهزاً فوراً */
-        #bg-slider { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; background: #000; }
-        #bg-slider img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 0.8s; }
+        /* حاوية الخلفية */
+        #bg-slider { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #bg-slider img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            position: absolute; opacity: 0; transition: opacity 0.5s ease-in; 
+            will-change: opacity; /* تنبيه للمتصفح لتحسين الأداء */
+        }
         #bg-slider img.active { opacity: 1; }
 
-        /* واجهة المستخدم - مع إضافة خلفية احتياطية */
-        .main-overlay { position: relative; z-index: 5; height: 100vh; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); color: white; text-align: center; padding: 20px; }
-        
-        /* جعل العنوان يظهر فوراً */
-        #display-title { font-size: clamp(1.5rem, 5vw, 3.5rem); margin-bottom: 30px; text-shadow: 0 4px 15px #000; opacity: 1; }
-        #display-button { padding: 18px 60px; background: #00d2ff; color: #000; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.4rem; transition: 0.2s; }
+        /* الطبقة الأمامية */
+        .overlay { 
+            position: relative; z-index: 10; height: 100%; width: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.3); color: white; text-align: center; padding: 20px;
+        }
 
-        .secret-trigger { position: fixed; top: 0; left: 0; width: 60px; height: 60px; z-index: 9999; background: transparent; border: none; }
-        #admin-panel { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: #111; color: white; z-index: 10000; padding: 25px; transform: translateX(100%); transition: 0.3s; overflow-y: auto; border-left: 3px solid #00d2ff; }
+        #display-title { font-size: 2.5rem; margin-bottom: 25px; text-shadow: 0 2px 10px #000; font-weight: bold; }
+        #display-button { 
+            padding: 15px 50px; background: #00d2ff; color: #000; 
+            text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        /* الزر السري ولوحة التحكم */
+        .secret-trigger { position: fixed; top: 0; left: 0; width: 50px; height: 50px; z-index: 100; cursor: pointer; background: transparent; border: none; }
+        #admin-panel { 
+            position: fixed; top: 0; right: 0; width: 300px; height: 100%; 
+            background: #111; color: white; z-index: 1000; padding: 20px;
+            transform: translateX(100%); transition: 0.3s; overflow-y: auto; border-left: 2px solid #00d2ff;
+        }
         #admin-panel.open { transform: translateX(0); }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; }
-        .save-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .img-list-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; margin-top: 8px; padding: 8px; border-radius: 8px; }
-        .img-list-item img { width: 50px; height: 40px; object-fit: cover; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #333; background: #222; color: white; }
+        .save-btn { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .img-item { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 5px; margin-top: 5px; border-radius: 5px; }
+        .img-item img { width: 40px; height: 30px; object-fit: cover; }
     </style>
 </head>
 <body>
 
-    <button class="secret-trigger" onclick="checkAuth()"></button>
+    <button class="secret-trigger" onclick="openAdmin()"></button>
 
     <div id="admin-panel">
-        <h3 style="color: #00d2ff;">⚙️ الإعدادات</h3>
-        <input type="text" id="in-title" placeholder="تعديل العنوان">
+        <h4>⚙️ الإعدادات</h4>
+        <input type="text" id="in-title" placeholder="العنوان">
         <input type="text" id="in-btn-txt" placeholder="نص الزر">
         <input type="text" id="in-btn-url" placeholder="رابط الزر">
         <input type="file" id="in-file" accept="image/*">
-        <button class="save-btn" onclick="uploadConfig()">حفظ التعديلات</button>
-        <hr style="border:0.5px solid #333; margin:20px 0;">
-        <div id="manager-list"></div>
-        <button onclick="document.getElementById('admin-panel').classList.remove('open')" style="margin-top:20px; background:none; border:none; color:gray; cursor:pointer; width:100%;">إغلاق ✖</button>
+        <button class="save-btn" onclick="saveData()">حفظ</button>
+        <hr style="margin: 15px 0; border: 0.1px solid #333;">
+        <div id="list"></div>
+        <button onclick="this.parentElement.classList.remove('open')" style="color:gray; background:none; border:none; margin-top:20px; cursor:pointer; width:100%;">إغلاق</button>
     </div>
 
     <div id="bg-slider"></div>
 
-    <div class="main-overlay">
+    <div class="overlay">
         <h1 id="display-title">استعلامات مستشفى القصر العيني الفرنساوي</h1>
         <a href="#" id="display-button">دخول</a>
     </div>
@@ -67,11 +84,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function checkAuth() {
-            if (prompt("الرمز السري:") === "1987") document.getElementById('admin-panel').classList.add('open');
-        }
+        function openAdmin() { if(prompt("الرمز:") === "1987") document.getElementById('admin-panel').classList.add('open'); }
 
-        function uploadConfig() {
+        function saveData() {
             const file = document.getElementById('in-file').files[0];
             const upd = {};
             const t = document.getElementById('in-title').value;
@@ -81,26 +96,20 @@
             if(t) upd['title'] = t;
             if(bt) upd['btnText'] = bt;
             if(bu) upd['btnLink'] = bu;
-            
             db.ref('siteConfig').update(upd);
 
             if(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    db.ref('imagesList').push(e.target.result).then(() => {
-                        document.getElementById('in-file').value = "";
-                        alert("تم رفع الصورة بنجاح ✅");
-                    });
+                    db.ref('imagesList').push(e.target.result).then(() => alert("تم الحفظ ✅"));
                 };
                 reader.readAsDataURL(file);
-            } else { alert("تم حفظ التعديلات ✅"); }
+            } else { alert("تم الحفظ ✅"); }
         }
 
-        function removeImage(key) {
-            if(confirm("حذف الصورة؟")) db.ref('imagesList').child(key).remove();
-        }
+        function del(k) { if(confirm("حذف؟")) db.ref('imagesList').child(k).remove(); }
 
-        // تحسين: جلب النصوص وعرضها فوراً
+        // تحميل البيانات
         db.ref('siteConfig').on('value', s => {
             const d = s.val();
             if(d) {
@@ -110,33 +119,30 @@
             }
         });
 
-        // تحسين: جلب الصور وعرضها فوراً
         db.ref('imagesList').on('value', s => {
             const imgs = s.val();
             const slider = document.getElementById('bg-slider');
-            const manager = document.getElementById('manager-list');
-            
+            const list = document.getElementById('list');
             if(imgs) {
-                let htmlSlider = "";
-                let htmlManager = "";
-                Object.keys(imgs).forEach((key, i) => {
-                    const url = imgs[key];
-                    htmlSlider += `<img src="${url}" class="${i === 0 ? 'active' : ''}">`;
-                    htmlManager += `<div class="img-list-item"><img src="${url}"> <button onclick="removeImage('${key}')" style="background:red;color:white;border:none;padding:5px;border-radius:5px;cursor:pointer;">حذف</button></div>`;
+                let sHtml = ""; let lHtml = "";
+                Object.keys(imgs).forEach((k, i) => {
+                    const url = imgs[k];
+                    sHtml += `<img src="${url}" class="${i === 0 ? 'active' : ''}">`;
+                    lHtml += `<div class="img-item"><img src="${url}"><button onclick="del('${k}')" style="background:red;color:white;border:none;padding:3px 8px;border-radius:3px;">حذف</button></div>`;
                 });
-                slider.innerHTML = htmlSlider;
-                manager.innerHTML = htmlManager;
+                slider.innerHTML = sHtml;
+                list.innerHTML = lHtml;
             }
         });
 
         // حركة السلايدر
-        let currentIdx = 0;
+        let idx = 0;
         setInterval(() => {
-            const allSlides = document.querySelectorAll('#bg-slider img');
-            if(allSlides.length < 2) return;
-            allSlides[currentIdx].classList.remove('active');
-            currentIdx = (currentIdx + 1) % allSlides.length;
-            allSlides[currentIdx].classList.add('active');
+            const slides = document.querySelectorAll('#bg-slider img');
+            if(slides.length < 2) return;
+            slides[idx].classList.remove('active');
+            idx = (idx + 1) % slides.length;
+            slides[idx].classList.add('active');
         }, 3000);
     </script>
 </body>
